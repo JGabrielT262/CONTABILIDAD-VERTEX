@@ -1,7 +1,7 @@
 import { redirect } from "next/navigation";
 import Navbar from "@/components/Navbar";
 import PerfilesClient from "./PerfilesClient";
-import { getSessionUser, USUARIOS_TABLE, type UsuarioRow } from "@/lib/auth";
+import { getSessionUser, USUARIOS_TABLE } from "@/lib/auth";
 import { createSupabaseAdmin } from "@/lib/supabase";
 
 export default async function PerfilesPage() {
@@ -13,11 +13,11 @@ export default async function PerfilesPage() {
   const { data } = await supabase
     .from(USUARIOS_TABLE)
     .select(
-      "id, nombre, puede_crear_movimientos, puede_borrar_movimientos, puede_gestionar_perfiles, activo, created_at, updated_at, password_hash"
+      "id, nombre, puede_crear_movimientos, puede_borrar_movimientos, puede_gestionar_perfiles, activo, created_at"
     )
     .order("created_at", { ascending: true });
 
-  const usuarios = ((data || []) as UsuarioRow[]).map((u) => ({
+  const usuarios = (data || []).map((u) => ({
     id: u.id,
     nombre: u.nombre,
     puede_crear_movimientos: u.puede_crear_movimientos,
@@ -29,7 +29,7 @@ export default async function PerfilesPage() {
 
   return (
     <div className="min-h-dvh pb-16 md:pb-0">
-      <Navbar />
+      <Navbar initialUser={user} />
       <main className="vertex-page space-y-4 max-w-3xl">
         <div>
           <h1 className="text-xl font-bold tracking-tight">Perfiles</h1>

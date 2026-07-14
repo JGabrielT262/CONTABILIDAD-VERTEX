@@ -1,6 +1,8 @@
 import { esIngreso, type Movimiento, type ResumenPeriodo } from "./types";
 
-export function calcularResumen(movimientos: Movimiento[]): ResumenPeriodo {
+export type MovimientoResumen = Pick<Movimiento, "tipo" | "total" | "igv">;
+
+export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriodo {
   let totalIngresos = 0;
   let totalEgresos = 0;
   let totalVentas = 0;

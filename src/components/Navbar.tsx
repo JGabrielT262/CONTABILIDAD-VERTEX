@@ -23,6 +23,10 @@ interface NavUser {
   puede_gestionar: boolean;
 }
 
+interface NavbarProps {
+  initialUser?: NavUser | null;
+}
+
 const BASE_ITEMS = [
   { href: "/dashboard", label: "Resumen", icon: LayoutDashboard },
   { href: "/movimientos", label: "Movimientos", icon: ArrowLeftRight },
@@ -35,20 +39,21 @@ function isActive(pathname: string, href: string) {
   return pathname === href || pathname.startsWith(`${href}/`);
 }
 
-export default function Navbar() {
+export default function Navbar({ initialUser }: NavbarProps) {
   const pathname = usePathname();
   const router = useRouter();
   const [menuOpen, setMenuOpen] = useState(false);
-  const [user, setUser] = useState<NavUser | null>(null);
+  const [user, setUser] = useState<NavUser | null>(initialUser ?? null);
 
   useEffect(() => {
+    if (initialUser !== undefined) return;
     fetch("/api/auth")
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data?.user) setUser(data.user);
       })
       .catch(() => {});
-  }, []);
+  }, [initialUser]);
 
   const navItems = [
     ...BASE_ITEMS,

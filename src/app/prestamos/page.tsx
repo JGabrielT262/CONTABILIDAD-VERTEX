@@ -8,22 +8,18 @@ export default async function PrestamosPage() {
   const user = await getSessionUser();
   const supabase = createSupabaseClient();
 
-  const [{ data: otorgados }, { data: cobros }] = await Promise.all([
-    supabase
-      .from(MOVIMIENTOS_TABLE)
-      .select("*")
-      .eq("tipo", "prestamo_otorgado")
-      .order("fecha", { ascending: false }),
-    supabase
-      .from(MOVIMIENTOS_TABLE)
-      .select("*")
-      .eq("tipo", "cobro_prestamo")
-      .order("fecha", { ascending: false }),
-  ]);
+  const { data } = await supabase
+    .from(MOVIMIENTOS_TABLE)
+    .select("*")
+    .in("tipo", ["prestamo_otorgado", "cobro_prestamo"])
+    .order("fecha", { ascending: false });
+  const movimientos = (data || []) as Movimiento[];
+  const otorgados = movimientos.filter((m) => m.tipo === "prestamo_otorgado");
+  const cobros = movimientos.filter((m) => m.tipo === "cobro_prestamo");
 
   const cobradoPorPrestamo = new Map<string, number>();
   const cobrosPorPrestamo = new Map<string, Movimiento[]>();
-  for (const cobro of (cobros || []) as Movimiento[]) {
+  for (const cobro of cobros) {
     if (!cobro.prestamo_id) continue;
     const prev = cobradoPorPrestamo.get(cobro.prestamo_id) || 0;
     cobradoPorPrestamo.set(cobro.prestamo_id, prev + Number(cobro.total));
@@ -32,7 +28,7 @@ export default async function PrestamosPage() {
     cobrosPorPrestamo.set(cobro.prestamo_id, lista);
   }
 
-  const prestamos: PrestamoItem[] = ((otorgados || []) as Movimiento[]).map(
+  const prestamos: PrestamoItem[] = otorgados.map(
     (p) => {
       const total = Number(p.total);
       const cobrado = cobradoPorPrestamo.get(p.id) || 0;
@@ -58,7 +54,7 @@ export default async function PrestamosPage() {
 
   return (
     <div className="min-h-dvh pb-16 md:pb-0">
-      <Navbar />
+      <Navbar initialUser={user} />
       <main className="vertex-page space-y-4 max-w-4xl">
         <div>
           <h1 className="text-xl font-bold tracking-tight">Préstamos</h1>

@@ -42,7 +42,7 @@ export default async function MovimientosPage({ searchParams }: MovimientosPageP
 
   return (
     <div className="min-h-dvh pb-16 md:pb-0">
-      <Navbar />
+      <Navbar initialUser={user} />
       <main className="vertex-page space-y-4">
         <MovimientosView
           year={year}

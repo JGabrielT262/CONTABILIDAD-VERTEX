@@ -23,8 +23,13 @@ export default function LoginForm() {
         body: JSON.stringify({ code }),
       });
 
-      if (!res.ok) {
+      if (res.status === 401) {
         setError("Código de acceso incorrecto");
+        return;
+      }
+
+      if (!res.ok) {
+        setError("Error del servidor. Revisa las variables de Vercel.");
         return;
       }
 

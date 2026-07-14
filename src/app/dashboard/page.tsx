@@ -3,9 +3,13 @@ import StatsCard from "@/components/StatsCard";
 import DashboardClient from "./DashboardClient";
 import MonthlyBars, { KpiBar } from "@/components/MonthlyBars";
 import { createSupabaseClient, MOVIMIENTOS_TABLE } from "@/lib/supabase";
-import { calcularResumen, getMonthRange } from "@/lib/resumen";
+import {
+  calcularResumen,
+  getMonthRange,
+  type MovimientoResumen,
+} from "@/lib/resumen";
 import { formatSoles } from "@/lib/igv";
-import type { Movimiento } from "@/lib/types";
+import { getSessionUser } from "@/lib/auth";
 import {
   Wallet,
   TrendingUp,
@@ -37,22 +41,22 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     parseInt(params.year || String(Math.max(now.getFullYear(), 2026)))
   );
   const month = parseInt(params.month || String(now.getMonth() + 1));
-  const { desde, hasta } = getMonthRange(year, month);
-
   const supabase = createSupabaseClient();
-
-  const [{ data: movimientos }, { data: todos }] = await Promise.all([
+  const [{ data }, user] = await Promise.all([
     supabase
       .from(MOVIMIENTOS_TABLE)
-      .select("*")
-      .gte("fecha", desde)
-      .lte("fecha", hasta)
+      .select("tipo,total,igv,fecha")
       .order("fecha", { ascending: false }),
-    supabase.from(MOVIMIENTOS_TABLE).select("*"),
+    getSessionUser(),
   ]);
+  const todos = (data || []) as (MovimientoResumen & { fecha: string })[];
+  const { desde, hasta } = getMonthRange(year, month);
+  const movimientos = todos.filter(
+    (movimiento) => movimiento.fecha >= desde && movimiento.fecha <= hasta
+  );
 
-  const resumen = calcularResumen(movimientos || []);
-  const cajaGlobal = calcularResumen(todos || []);
+  const resumen = calcularResumen(movimientos);
+  const cajaGlobal = calcularResumen(todos);
   const igvNetoMes = Math.max(resumen.totalIgvVentas - resumen.totalIgvCompras, 0);
   const baseMes = Math.max(resumen.totalIngresos + resumen.totalEgresos, 1);
 
@@ -66,7 +70,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     }
     if (y < 2026) continue;
     const range = getMonthRange(y, m);
-    const delMes = ((todos || []) as Movimiento[]).filter(
+    const delMes = todos.filter(
       (mov) => mov.fecha >= range.desde && mov.fecha <= range.hasta
     );
     const r = calcularResumen(delMes);
@@ -79,7 +83,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   return (
     <div className="min-h-dvh pb-16 md:pb-0">
-      <Navbar />
+      <Navbar initialUser={user} />
       <main className="vertex-page space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>

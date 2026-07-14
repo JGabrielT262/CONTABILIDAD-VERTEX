@@ -1,5 +1,5 @@
 import Navbar from "@/components/Navbar";
-import CalendarClient from "./CalendarClient";
+import CalendarClient, { type CalendarMovimiento } from "./CalendarClient";
 import { createSupabaseClient, MOVIMIENTOS_TABLE, TAREAS_TABLE } from "@/lib/supabase";
 import { getMonthRange } from "@/lib/resumen";
 import { calcularResumen } from "@/lib/resumen";
@@ -26,7 +26,7 @@ export default async function CalendarioPage({ searchParams }: CalendarioPagePro
   const [{ data: movimientos }, { data: tareas }] = await Promise.all([
     supabase
       .from(MOVIMIENTOS_TABLE)
-      .select("*")
+      .select("id,fecha,tipo,concepto,total,igv")
       .gte("fecha", desde)
       .lte("fecha", hasta)
       .order("fecha", { ascending: true }),
@@ -42,7 +42,7 @@ export default async function CalendarioPage({ searchParams }: CalendarioPagePro
 
   return (
     <div className="min-h-dvh pb-16 md:pb-0">
-      <Navbar />
+      <Navbar initialUser={user} />
       <main className="vertex-page space-y-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
           <div>
@@ -63,7 +63,7 @@ export default async function CalendarioPage({ searchParams }: CalendarioPagePro
         <CalendarClient
           year={year}
           month={month}
-          movimientos={movimientos || []}
+          movimientos={(movimientos || []) as CalendarMovimiento[]}
           tareas={(tareas || []) as Tarea[]}
           canDelete={user?.puede_borrar ?? false}
         />

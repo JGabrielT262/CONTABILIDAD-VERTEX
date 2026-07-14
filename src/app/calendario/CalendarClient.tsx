@@ -17,16 +17,21 @@ import {
   ListTodo,
 } from "lucide-react";
 
+export type CalendarMovimiento = Pick<
+  Movimiento,
+  "id" | "fecha" | "tipo" | "concepto" | "total" | "igv"
+>;
+
 interface DaySummary {
   ingresos: number;
   egresos: number;
-  items: Movimiento[];
+  items: CalendarMovimiento[];
 }
 
 interface CalendarClientProps {
   year: number;
   month: number;
-  movimientos: Movimiento[];
+  movimientos: CalendarMovimiento[];
   tareas: Tarea[];
   canDelete?: boolean;
 }
