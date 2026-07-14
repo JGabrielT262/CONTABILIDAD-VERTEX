@@ -1,0 +1,205 @@
+@import "tailwindcss";
+
+:root {
+  --vertex-navy: #0a1628;
+  --vertex-bg: #f0f3f7;
+  --vertex-card: #ffffff;
+  --vertex-surface: #f5f7fa;
+  --vertex-surface-2: #e8eef5;
+  --vertex-blue: #0057b8;
+  --vertex-cyan: #0099d6;
+  --vertex-text: #111827;
+  --vertex-muted: #64748b;
+  --vertex-border: #d0d7e2;
+  --vertex-success: #059669;
+  --vertex-danger: #dc2626;
+  --radius: 4px;
+}
+
+@theme inline {
+  --color-vertex-navy: var(--vertex-navy);
+  --color-vertex-bg: var(--vertex-bg);
+  --color-vertex-card: var(--vertex-card);
+  --color-vertex-surface: var(--vertex-surface);
+  --color-vertex-surface-2: var(--vertex-surface-2);
+  --color-vertex-blue: var(--vertex-blue);
+  --color-vertex-cyan: var(--vertex-cyan);
+  --color-vertex-text: var(--vertex-text);
+  --color-vertex-muted: var(--vertex-muted);
+  --color-vertex-border: var(--vertex-border);
+  --color-vertex-success: var(--vertex-success);
+  --color-vertex-danger: var(--vertex-danger);
+  --font-sans: var(--font-inter);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  background: var(--vertex-bg);
+  color: var(--vertex-text);
+  min-height: 100dvh;
+  font-size: 14px;
+}
+
+.vertex-page {
+  width: 100%;
+  max-width: 100%;
+  padding: 1rem 1.25rem 5rem;
+}
+
+@media (min-width: 768px) {
+  .vertex-page {
+    padding: 1.25rem 1.5rem 1.5rem;
+  }
+}
+
+.vertex-gradient {
+  background: linear-gradient(135deg, #0057b8 0%, #0099d6 100%);
+}
+
+.vertex-caja {
+  background: linear-gradient(135deg, #0057b8 0%, #0099d6 100%);
+  color: #fff;
+  border: none;
+  border-radius: var(--radius);
+  padding: 0.75rem 1rem;
+}
+
+.vertex-caja-neta {
+  background: linear-gradient(135deg, #047857 0%, #059669 100%);
+}
+
+.vertex-caja-gastos {
+  background: linear-gradient(135deg, #b91c1c 0%, #dc2626 100%);
+}
+
+.vertex-card {
+  background: var(--vertex-card);
+  border: 1px solid var(--vertex-border);
+  border-radius: var(--radius);
+}
+
+.vertex-input {
+  width: 100%;
+  padding: 0.45rem 0.65rem;
+  background: #fff;
+  border: 1px solid var(--vertex-border);
+  border-radius: var(--radius);
+  color: var(--vertex-text);
+  font-size: 0.875rem;
+  transition: border-color 0.15s;
+}
+
+.vertex-input:focus {
+  outline: none;
+  border-color: var(--vertex-blue);
+}
+
+.vertex-input::placeholder {
+  color: #94a3b8;
+}
+
+.vertex-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.4rem;
+  padding: 0.45rem 0.9rem;
+  border-radius: var(--radius);
+  font-weight: 600;
+  font-size: 0.8125rem;
+  transition: background 0.15s, opacity 0.15s;
+  cursor: pointer;
+  border: none;
+}
+
+.vertex-btn-primary {
+  background: var(--vertex-blue);
+  color: white;
+}
+
+.vertex-btn-primary:hover {
+  background: #004a9c;
+}
+
+.vertex-btn-secondary {
+  background: #fff;
+  color: var(--vertex-text);
+  border: 1px solid var(--vertex-border);
+}
+
+.vertex-btn-secondary:hover {
+  background: var(--vertex-surface);
+}
+
+.vertex-btn-danger {
+  background: #fef2f2;
+  color: var(--vertex-danger);
+  border: 1px solid #fecaca;
+}
+
+.vertex-label {
+  display: block;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--vertex-muted);
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.02em;
+}
+
+.vertex-period {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+  background: var(--vertex-navy);
+  color: #fff;
+  border-radius: var(--radius);
+  padding: 0.25rem;
+}
+
+.vertex-period select {
+  background: transparent;
+  color: #fff;
+  border: none;
+  padding: 0.35rem 0.5rem;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  outline: none;
+  cursor: pointer;
+}
+
+.vertex-period select option {
+  color: #111;
+  background: #fff;
+}
+
+.vertex-period button {
+  background: rgba(255, 255, 255, 0.1);
+  border: none;
+  color: #fff;
+  padding: 0.3rem;
+  border-radius: 2px;
+  cursor: pointer;
+  display: inline-flex;
+}
+
+.vertex-period button:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+::-webkit-scrollbar {
+  width: 6px;
+  height: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--vertex-surface-2);
+}
+
+::-webkit-scrollbar-thumb {
+  background: #b6c2d1;
+  border-radius: 2px;
+}
