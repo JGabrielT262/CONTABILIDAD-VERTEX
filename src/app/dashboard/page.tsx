@@ -58,7 +58,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
 
   const resumen = calcularResumen(movimientos);
   const cajaGlobal = calcularResumen(todos);
-  const igvNetoMes = Math.max(resumen.totalIgvVentas - resumen.totalIgvCompras, 0);
+  const igvGeneradoMes = Math.max(
+    resumen.totalIgvVentas - resumen.totalIgvCompras,
+    0
+  );
+  // Descuenta pagos IGV imputados a este periodo
+  const igvNetoMes = Math.max(igvGeneradoMes - resumen.totalPagosIgv, 0);
+  const igvMesPagado =
+    igvGeneradoMes > 0 && resumen.totalPagosIgv >= igvGeneradoMes;
   const baseMes = Math.max(resumen.totalIngresos + resumen.totalEgresos, 1);
 
   const chartData: { label: string; ingresos: number; egresos: number }[] = [];
@@ -176,6 +183,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 total={baseMes}
                 color="red"
               />
+              {resumen.totalPagosIgv > 0 && (
+                <p className="text-[11px] text-vertex-muted -mt-2">
+                  Incluye pago IGV del periodo:{" "}
+                  {formatSoles(resumen.totalPagosIgv)}
+                  {igvMesPagado ? " · IGV cubierto" : ""}
+                </p>
+              )}
               <KpiBar
                 label="Préstamos (se recuperan)"
                 value={resumen.totalPrestamosOtorgados}
@@ -248,11 +262,30 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               icon={ShoppingCart}
             />
             <StatsCard
-              title="IGV neto a pagar"
-              value={formatSoles(igvNetoMes)}
-              subtitle="Cálculo del mes · no reserva caja"
+              title={igvMesPagado ? "IGV del mes · PAGADO" : "IGV neto a pagar"}
+              value={
+                igvMesPagado ? "PAGADO" : formatSoles(igvNetoMes)
+              }
+              subtitle={
+                igvMesPagado
+                  ? `Generado ${formatSoles(igvGeneradoMes)} · pagado ${formatSoles(resumen.totalPagosIgv)}`
+                  : resumen.totalPagosIgv > 0
+                    ? `Pendiente · ya pagado ${formatSoles(resumen.totalPagosIgv)}`
+                    : "IGV ventas − IGV compras − pagos del periodo"
+              }
               icon={Receipt}
-              variant="info"
+              variant={igvMesPagado ? "success" : "info"}
+            />
+            <StatsCard
+              title="IGV pagado (periodo)"
+              value={formatSoles(resumen.totalPagosIgv)}
+              subtitle={
+                resumen.totalPagosIgv > 0
+                  ? "Imputado a este mes (aunque se pagó después)"
+                  : "Sin pagos registrados para este mes"
+              }
+              icon={Receipt}
+              variant={resumen.totalPagosIgv > 0 ? "success" : "default"}
             />
             <StatsCard
               title="IGV de ventas"

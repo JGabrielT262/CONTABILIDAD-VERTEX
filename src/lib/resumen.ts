@@ -15,14 +15,15 @@ export function fechaContable(m: {
   fecha?: string;
   periodo_impuesto?: string | null;
 }): string {
-  if (
-    m.tipo === "pago_igv" &&
-    m.periodo_impuesto &&
-    /^\d{4}-\d{2}$/.test(m.periodo_impuesto)
-  ) {
-    return `${m.periodo_impuesto}-01`;
+  if (m.tipo === "pago_igv") {
+    const periodo = (m.periodo_impuesto || "").trim();
+    if (/^\d{4}-\d{2}$/.test(periodo)) {
+      return `${periodo}-01`;
+    }
   }
-  return m.fecha || "";
+  // Normaliza por si fecha viene con hora
+  const f = (m.fecha || "").slice(0, 10);
+  return f;
 }
 
 export function perteneceAlMes(
@@ -34,6 +35,12 @@ export function perteneceAlMes(
   desde: string,
   hasta: string
 ): boolean {
+  if (m.tipo === "pago_igv") {
+    const periodo = (m.periodo_impuesto || "").trim();
+    if (/^\d{4}-\d{2}$/.test(periodo)) {
+      return periodo === desde.slice(0, 7);
+    }
+  }
   const ref = fechaContable(m);
   return Boolean(ref) && ref >= desde && ref <= hasta;
 }
