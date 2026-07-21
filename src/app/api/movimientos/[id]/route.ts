@@ -147,6 +147,15 @@ export async function PUT(
       (formData.get("comprobante_numero") as string) || null;
     const ruc = (formData.get("ruc") as string) || null;
     const razon_social = (formData.get("razon_social") as string) || null;
+    const periodo_impuesto =
+      (formData.get("periodo_impuesto") as string) || null;
+    const origen_fondo_raw = (formData.get("origen_fondo") as string) || null;
+    const origen_fondo =
+      tipo === "pago_igv"
+        ? origen_fondo_raw === "detracciones"
+          ? "detracciones"
+          : "caja"
+        : null;
 
     const requiereDatosFiscales =
       tipo === "compra" ||
@@ -166,6 +175,15 @@ export async function PUT(
       );
     }
 
+    if (tipo === "pago_igv") {
+      if (!periodo_impuesto || !/^\d{4}-\d{2}$/.test(periodo_impuesto)) {
+        return NextResponse.json(
+          { error: "Selecciona el periodo del IGV que estás pagando" },
+          { status: 400 }
+        );
+      }
+    }
+
     const aplicaIgv = tipoAplicaIgv(tipo);
     const esPrestamo =
       tipo === "prestamo_otorgado" || tipo === "prestamo_recibido";
@@ -180,6 +198,26 @@ export async function PUT(
       : cantidad > 0
         ? Math.round((subtotal / cantidad) * 100) / 100
         : null;
+
+    if (tipo === "pago_igv" && origen_fondo === "detracciones") {
+      const { data: todos, error: saldoError } = await supabase
+        .from(MOVIMIENTOS_TABLE)
+        .select("tipo,total,igv,origen_fondo")
+        .neq("id", id);
+      if (saldoError) {
+        return NextResponse.json({ error: saldoError.message }, { status: 500 });
+      }
+      const { calcularResumen } = await import("@/lib/resumen");
+      const saldo = calcularResumen(todos || []).saldoDetracciones;
+      if (total > saldo) {
+        return NextResponse.json(
+          {
+            error: `Saldo en detracciones insuficiente (disponible S/ ${saldo.toFixed(2)})`,
+          },
+          { status: 400 }
+        );
+      }
+    }
 
     const updateData: Record<string, unknown> = {
       tipo,
@@ -198,6 +236,8 @@ export async function PUT(
       ruc,
       razon_social,
       item: concepto,
+      periodo_impuesto: tipo === "pago_igv" ? periodo_impuesto : null,
+      origen_fondo,
     };
 
     if (archivo && archivo.size > 0) {

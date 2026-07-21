@@ -3,7 +3,12 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { formatSoles } from "@/lib/igv";
-import { esIngreso, TIPOS_MOVIMIENTO, type Movimiento } from "@/lib/types";
+import {
+  esIngreso,
+  labelPeriodoImpuesto,
+  TIPOS_MOVIMIENTO,
+  type Movimiento,
+} from "@/lib/types";
 import { format, parseISO } from "date-fns";
 import { es } from "date-fns/locale";
 import {
@@ -181,6 +186,16 @@ export default function MovementList({
                         {m.cantidad ? `Cant. ${m.cantidad}` : ""}
                         {m.igv > 0 ? ` · IGV ${formatSoles(m.igv)}` : ""}
                       </p>
+                      {m.tipo === "pago_igv" && (
+                        <p className="text-[11px] text-amber-700 mt-0.5">
+                          Periodo{" "}
+                          {labelPeriodoImpuesto(m.periodo_impuesto) || "—"}
+                          {" · "}
+                          {m.origen_fondo === "detracciones"
+                            ? "Desde detracciones"
+                            : "Desde caja"}
+                        </p>
+                      )}
                       {muestraDatosFiscales && (
                         <p className="text-[11px] text-vertex-muted mt-0.5">
                           {m.ruc ? `RUC ${m.ruc}` : "RUC no registrado"}

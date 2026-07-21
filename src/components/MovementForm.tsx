@@ -4,10 +4,14 @@ import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import DateInput from "@/components/DateInput";
 import { calcularIgv, formatSoles, IGV_RATE } from "@/lib/igv";
+import { calcularResumen } from "@/lib/resumen";
 import {
+  MESES_LABEL,
   TIPOS_FORMULARIO,
+  labelPeriodoImpuesto,
   tipoAplicaIgv,
   type Movimiento,
+  type OrigenFondo,
   type TipoMovimiento,
 } from "@/lib/types";
 import { Loader2, Paperclip, Save, Search, X } from "lucide-react";
@@ -18,6 +22,13 @@ interface MovementFormProps {
   onSuccess?: () => void;
 }
 
+function periodoFromDate(isoDate: string): { year: number; month: number } {
+  const d = new Date(`${isoDate}T12:00:00`);
+  // Periodo del mes anterior (IGV suele pagarse al mes siguiente)
+  d.setMonth(d.getMonth() - 1);
+  return { year: Math.max(2026, d.getFullYear()), month: d.getMonth() + 1 };
+}
+
 export default function MovementForm({
   movimiento,
   onCancel,
@@ -25,6 +36,16 @@ export default function MovementForm({
 }: MovementFormProps) {
   const router = useRouter();
   const isEdit = !!movimiento;
+
+  const initialPeriodo = (() => {
+    if (movimiento?.periodo_impuesto?.match(/^\d{4}-\d{2}$/)) {
+      const [y, m] = movimiento.periodo_impuesto.split("-");
+      return { year: parseInt(y, 10), month: parseInt(m, 10) };
+    }
+    return periodoFromDate(
+      movimiento?.fecha || new Date().toISOString().split("T")[0]
+    );
+  })();
 
   const [tipo, setTipo] = useState<TipoMovimiento>(movimiento?.tipo || "venta");
   const [fecha, setFecha] = useState(
@@ -52,9 +73,16 @@ export default function MovementForm({
   const [error, setError] = useState("");
   const [tieneDetraccion, setTieneDetraccion] = useState<"si" | "no" | "">("");
   const [montoDetraccion, setMontoDetraccion] = useState("");
+  const [periodoIgvYear, setPeriodoIgvYear] = useState(initialPeriodo.year);
+  const [periodoIgvMonth, setPeriodoIgvMonth] = useState(initialPeriodo.month);
+  const [origenFondo, setOrigenFondo] = useState<OrigenFondo>(
+    movimiento?.origen_fondo === "detracciones" ? "detracciones" : "caja"
+  );
+  const [saldoDetracciones, setSaldoDetracciones] = useState<number | null>(null);
 
   const aplicaIgv = tipoAplicaIgv(tipo);
   const esCompra = tipo === "compra";
+  const esPagoIgv = tipo === "pago_igv";
   const esFactura = comprobanteTipo === "factura";
   const esVentaFactura = tipo === "venta" && esFactura;
   const requiereDatosFiscales = esCompra || esVentaFactura;
@@ -71,11 +99,15 @@ export default function MovementForm({
     preview && cantidadNum > 0
       ? Math.round((preview.subtotal / cantidadNum) * 100) / 100
       : null;
+  const periodoImpuesto = `${periodoIgvYear}-${String(periodoIgvMonth).padStart(2, "0")}`;
 
   useEffect(() => {
     if (!isEdit) {
-      if (tipo === "pago_igv") setConcepto("Pago de IGV");
-      else if (tipo === "pago_contador") setConcepto("Pago a contador");
+      if (tipo === "pago_igv") {
+        setConcepto(
+          `Pago de IGV · ${labelPeriodoImpuesto(periodoImpuesto)}`
+        );
+      } else if (tipo === "pago_contador") setConcepto("Pago a contador");
       else if (tipo === "retiro") setConcepto("Retiro de caja");
       else if (tipo === "venta") setConcepto("Venta");
       else if (tipo === "compra") setConcepto("Compra");
@@ -84,7 +116,26 @@ export default function MovementForm({
       else if (tipo === "retiro_detraccion")
         setConcepto("Retiro desde detracciones");
     }
-  }, [tipo, isEdit]);
+  }, [tipo, isEdit, periodoImpuesto]);
+
+  useEffect(() => {
+    if (!esPagoIgv) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await fetch("/api/movimientos");
+        if (!res.ok) return;
+        const data = await res.json();
+        const r = calcularResumen(data || []);
+        if (!cancelled) setSaldoDetracciones(r.saldoDetracciones);
+      } catch {
+        if (!cancelled) setSaldoDetracciones(null);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [esPagoIgv]);
 
   async function consultarRuc(valor?: string) {
     const numero = (valor ?? ruc).replace(/\D/g, "");
@@ -139,6 +190,20 @@ export default function MovementForm({
           throw new Error("La detracción debe ser menor al total de la factura");
         }
       }
+      if (esPagoIgv) {
+        if (!periodoIgvYear || !periodoIgvMonth) {
+          throw new Error("Selecciona el periodo del IGV que estás pagando");
+        }
+        if (
+          origenFondo === "detracciones" &&
+          saldoDetracciones != null &&
+          montoNum > saldoDetracciones
+        ) {
+          throw new Error(
+            `Saldo en detracciones insuficiente (${formatSoles(saldoDetracciones)})`
+          );
+        }
+      }
 
       const formData = new FormData();
       formData.append("tipo", tipo);
@@ -162,6 +227,10 @@ export default function MovementForm({
         if (tieneDetraccion === "si") {
           formData.append("monto_detraccion", String(montoDetraccionNum));
         }
+      }
+      if (esPagoIgv) {
+        formData.append("periodo_impuesto", periodoImpuesto);
+        formData.append("origen_fondo", origenFondo);
       }
       if (archivo) formData.append("documento", archivo);
 
@@ -207,14 +276,103 @@ export default function MovementForm({
           <label className="vertex-label">Fecha</label>
           <DateInput
             value={fecha}
-            onChange={setFecha}
+            onChange={(value) => {
+              setFecha(value);
+              if (!isEdit && tipo === "pago_igv") {
+                const p = periodoFromDate(value);
+                setPeriodoIgvYear(p.year);
+                setPeriodoIgvMonth(p.month);
+              }
+            }}
             required
           />
           <p className="text-xs text-vertex-muted mt-1">
-            Si eliges un mes pasado, se contabiliza en ese período.
+            {esPagoIgv
+              ? "Fecha en que realizas el pago (puede ser este mes)."
+              : "Si eliges un mes pasado, se contabiliza en ese período."}
           </p>
         </div>
       </div>
+
+      {esPagoIgv && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-4">
+          <div>
+            <p className="text-sm font-medium text-vertex-text">
+              Datos del pago de IGV
+            </p>
+            <p className="text-xs text-vertex-muted mt-0.5">
+              Elige el mes del impuesto y de dónde sale el dinero
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="vertex-label">Periodo del IGV</label>
+              <div className="grid grid-cols-2 gap-2">
+                <select
+                  value={periodoIgvMonth}
+                  onChange={(e) => setPeriodoIgvMonth(parseInt(e.target.value, 10))}
+                  className="vertex-input"
+                  required
+                >
+                  {MESES_LABEL.map((label, idx) => (
+                    <option key={label} value={idx + 1}>
+                      {label}
+                    </option>
+                  ))}
+                </select>
+                <select
+                  value={periodoIgvYear}
+                  onChange={(e) => setPeriodoIgvYear(parseInt(e.target.value, 10))}
+                  className="vertex-input"
+                  required
+                >
+                  {[2026, 2027, 2028].map((y) => (
+                    <option key={y} value={y}>
+                      {y}
+                    </option>
+                  ))}
+                </select>
+              </div>
+              <p className="text-xs text-amber-800 mt-1">
+                Ej.: si pagas en julio el IGV de junio, elige Junio.
+              </p>
+            </div>
+
+            <div>
+              <label className="vertex-label">Descontar de</label>
+              <div className="flex flex-col gap-2 mt-1">
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="radio"
+                    name="origen_fondo"
+                    checked={origenFondo === "caja"}
+                    onChange={() => setOrigenFondo("caja")}
+                    className="accent-vertex-cyan"
+                  />
+                  Caja operativa (resta de la caja neta)
+                </label>
+                <label className="flex items-center gap-2 cursor-pointer text-sm">
+                  <input
+                    type="radio"
+                    name="origen_fondo"
+                    checked={origenFondo === "detracciones"}
+                    onChange={() => setOrigenFondo("detracciones")}
+                    className="accent-vertex-cyan"
+                  />
+                  Cuenta de detracciones (no resta caja)
+                </label>
+              </div>
+              {saldoDetracciones != null && (
+                <p className="text-xs text-amber-800 mt-1">
+                  Saldo detracciones disponible:{" "}
+                  {formatSoles(saldoDetracciones)}
+                </p>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
 
       <div>
         <label className="vertex-label">Concepto</label>

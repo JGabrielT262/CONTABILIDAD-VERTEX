@@ -27,6 +27,8 @@ CREATE TABLE IF NOT EXISTS movimientos (
   prestamo_id UUID REFERENCES movimientos(id) ON DELETE CASCADE,
   documento_url TEXT,
   documento_nombre TEXT,
+  periodo_impuesto TEXT,
+  origen_fondo TEXT CHECK (origen_fondo IS NULL OR origen_fondo IN ('caja', 'detracciones')),
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );

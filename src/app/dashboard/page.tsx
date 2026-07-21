@@ -45,7 +45,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const [{ data }, user] = await Promise.all([
     supabase
       .from(MOVIMIENTOS_TABLE)
-      .select("tipo,total,igv,fecha")
+      .select("tipo,total,igv,fecha,origen_fondo")
       .order("fecha", { ascending: false }),
     getSessionUser(),
   ]);
@@ -142,7 +142,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 {formatSoles(cajaGlobal.saldoDetracciones)}
               </p>
               <p className="text-xs text-white/80 mt-1.5">
-                Cuenta SUNAT · de aquí saldrá el IGV
+                Cuenta SUNAT · puedes pagar el IGV desde aquí
               </p>
             </div>
           </div>

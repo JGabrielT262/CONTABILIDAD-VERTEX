@@ -35,8 +35,36 @@ export interface Movimiento {
   documento_nombre: string | null;
   fecha_devolucion: string | null;
   prestamo_id: string | null;
+  /** Periodo tributario YYYY-MM (pago IGV) */
+  periodo_impuesto: string | null;
+  /** De dónde salió el dinero: caja | detracciones */
+  origen_fondo: "caja" | "detracciones" | null;
   created_at: string;
   updated_at: string;
+}
+
+export type OrigenFondo = "caja" | "detracciones";
+
+export const MESES_LABEL = [
+  "Enero",
+  "Febrero",
+  "Marzo",
+  "Abril",
+  "Mayo",
+  "Junio",
+  "Julio",
+  "Agosto",
+  "Septiembre",
+  "Octubre",
+  "Noviembre",
+  "Diciembre",
+];
+
+export function labelPeriodoImpuesto(periodo: string | null | undefined): string {
+  if (!periodo || !/^\d{4}-\d{2}$/.test(periodo)) return "";
+  const [y, m] = periodo.split("-");
+  const mes = MESES_LABEL[parseInt(m, 10) - 1];
+  return mes ? `${mes} ${y}` : periodo;
 }
 
 export interface ResumenPeriodo {

@@ -1,6 +1,8 @@
 import { esIngreso, type Movimiento, type ResumenPeriodo } from "./types";
 
-export type MovimientoResumen = Pick<Movimiento, "tipo" | "total" | "igv">;
+export type MovimientoResumen = Pick<Movimiento, "tipo" | "total" | "igv"> & {
+  origen_fondo?: Movimiento["origen_fondo"];
+};
 
 export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriodo {
   let totalIngresos = 0;
@@ -13,10 +15,13 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
   let totalPrestamosOtorgados = 0;
   let totalDepositosDetraccion = 0;
   let totalRetirosDetraccion = 0;
+  let totalPagosIgvDetracciones = 0;
 
   for (const m of movimientos) {
     const total = Number(m.total);
     const igv = Number(m.igv);
+    const desdeDetracciones =
+      m.tipo === "pago_igv" && m.origen_fondo === "detracciones";
 
     if (esIngreso(m.tipo)) {
       totalIngresos += total;
@@ -24,7 +29,8 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
         totalVentas += total;
         totalIgvVentas += igv;
       }
-    } else {
+    } else if (!desdeDetracciones) {
+      // Pago IGV desde detracciones no sale de la caja operativa
       totalEgresos += total;
       if (m.tipo === "compra") {
         totalCompras += total;
@@ -32,7 +38,10 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
       }
     }
 
-    if (m.tipo === "pago_igv") totalPagosIgv += total;
+    if (m.tipo === "pago_igv") {
+      totalPagosIgv += total;
+      if (desdeDetracciones) totalPagosIgvDetracciones += total;
+    }
     if (m.tipo === "prestamo_otorgado") totalPrestamosOtorgados += total;
     if (m.tipo === "deposito_detraccion") totalDepositosDetraccion += total;
     if (m.tipo === "retiro_detraccion") totalRetirosDetraccion += total;
@@ -56,10 +65,12 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
     totalPrestamosRecibidos: 0,
     totalPrestamosOtorgados,
     igvPendiente,
-    // Caja neta = entradas − salidas (el IGV pagado ya está en las salidas)
+    // Caja neta = entradas − salidas de caja (sin restar IGV pendiente)
     cajaNetaDisponible: balance,
     saldoDetracciones: Math.max(
-      totalDepositosDetraccion - totalRetirosDetraccion,
+      totalDepositosDetraccion -
+        totalRetirosDetraccion -
+        totalPagosIgvDetracciones,
       0
     ),
     cantidadMovimientos: movimientos.length,

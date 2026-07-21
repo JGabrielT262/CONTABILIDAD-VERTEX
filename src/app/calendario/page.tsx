@@ -27,7 +27,7 @@ export default async function CalendarioPage({ searchParams }: CalendarioPagePro
     await Promise.all([
       supabase
         .from(MOVIMIENTOS_TABLE)
-        .select("id,fecha,tipo,concepto,total,igv")
+        .select("id,fecha,tipo,concepto,total,igv,origen_fondo")
         .gte("fecha", desde)
         .lte("fecha", hasta)
         .order("fecha", { ascending: true }),
@@ -37,7 +37,7 @@ export default async function CalendarioPage({ searchParams }: CalendarioPagePro
         .gte("fecha", desde)
         .lte("fecha", hasta)
         .order("fecha", { ascending: true }),
-      supabase.from(MOVIMIENTOS_TABLE).select("tipo,total,igv"),
+      supabase.from(MOVIMIENTOS_TABLE).select("tipo,total,igv,origen_fondo"),
     ]);
 
   const resumenMes = calcularResumen(movimientos || []);

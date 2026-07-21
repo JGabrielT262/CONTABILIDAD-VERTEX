@@ -72,9 +72,27 @@ export async function POST(request: NextRequest) {
     const monto_detraccion = parseFloat(
       (formData.get("monto_detraccion") as string) || "0"
     );
+    const periodo_impuesto =
+      (formData.get("periodo_impuesto") as string) || null;
+    const origen_fondo_raw = (formData.get("origen_fondo") as string) || null;
+    const origen_fondo =
+      tipo === "pago_igv"
+        ? origen_fondo_raw === "detracciones"
+          ? "detracciones"
+          : "caja"
+        : null;
 
     if (!tipo || !concepto || !monto || !fecha) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
+    }
+
+    if (tipo === "pago_igv") {
+      if (!periodo_impuesto || !/^\d{4}-\d{2}$/.test(periodo_impuesto)) {
+        return NextResponse.json(
+          { error: "Selecciona el periodo del IGV que estás pagando" },
+          { status: 400 }
+        );
+      }
     }
 
     const requiereDatosFiscales =
@@ -171,6 +189,25 @@ export async function POST(request: NextRequest) {
             .join(" · ")
         : descripcion;
 
+    if (tipo === "pago_igv" && origen_fondo === "detracciones") {
+      const { data: todos, error: saldoError } = await supabase
+        .from(MOVIMIENTOS_TABLE)
+        .select("tipo,total,igv,origen_fondo");
+      if (saldoError) {
+        return NextResponse.json({ error: saldoError.message }, { status: 500 });
+      }
+      const { calcularResumen } = await import("@/lib/resumen");
+      const saldo = calcularResumen(todos || []).saldoDetracciones;
+      if (total > saldo) {
+        return NextResponse.json(
+          {
+            error: `Saldo en detracciones insuficiente (disponible S/ ${saldo.toFixed(2)})`,
+          },
+          { status: 400 }
+        );
+      }
+    }
+
     const { data, error } = await supabase
       .from(MOVIMIENTOS_TABLE)
       .insert({
@@ -192,6 +229,8 @@ export async function POST(request: NextRequest) {
         item: concepto,
         documento_url,
         documento_nombre,
+        periodo_impuesto: tipo === "pago_igv" ? periodo_impuesto : null,
+        origen_fondo,
       })
       .select()
       .single();

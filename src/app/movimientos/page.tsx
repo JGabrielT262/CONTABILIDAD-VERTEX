@@ -43,7 +43,7 @@ export default async function MovimientosPage({ searchParams }: MovimientosPageP
   // Saldo real global (todos los meses), para que coincida con el Resumen
   const { data: todos } = await supabase
     .from(MOVIMIENTOS_TABLE)
-    .select("tipo,total,igv");
+    .select("tipo,total,igv,origen_fondo");
   const cajaGlobal = calcularResumen(todos || []);
 
   return (
