@@ -1,4 +1,4 @@
--- Amplía tipos de movimiento permitidos
+-- Añade tipos para controlar el saldo en cuenta de detracciones
 ALTER TABLE movimientos DROP CONSTRAINT IF EXISTS movimientos_tipo_check;
 
 ALTER TABLE movimientos ADD CONSTRAINT movimientos_tipo_check

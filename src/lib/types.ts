@@ -8,7 +8,9 @@ export type TipoMovimiento =
   | "salida"
   | "prestamo_recibido"
   | "prestamo_otorgado"
-  | "cobro_prestamo";
+  | "cobro_prestamo"
+  | "deposito_detraccion"
+  | "retiro_detraccion";
 
 export interface Movimiento {
   id: string;
@@ -50,6 +52,7 @@ export interface ResumenPeriodo {
   totalPrestamosOtorgados: number;
   igvPendiente: number;
   cajaNetaDisponible: number;
+  saldoDetracciones: number;
   cantidadMovimientos: number;
 }
 
@@ -65,6 +68,18 @@ export const TIPOS_FORMULARIO: {
   { value: "retiro", label: "RETIRO", direccion: "egreso", aplicaIgv: false },
   { value: "pago_igv", label: "PAGO IGV", direccion: "egreso", aplicaIgv: false },
   { value: "pago_contador", label: "PAGO CONTADOR", direccion: "egreso", aplicaIgv: false },
+  {
+    value: "deposito_detraccion",
+    label: "A DETRACCIONES",
+    direccion: "egreso",
+    aplicaIgv: false,
+  },
+  {
+    value: "retiro_detraccion",
+    label: "DESDE DETRACCIONES",
+    direccion: "ingreso",
+    aplicaIgv: false,
+  },
 ];
 
 /** Todos los tipos (incluye préstamos y legacy) para filtros y listados */

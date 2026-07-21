@@ -11,6 +11,8 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
   let totalIgvCompras = 0;
   let totalPagosIgv = 0;
   let totalPrestamosOtorgados = 0;
+  let totalDepositosDetraccion = 0;
+  let totalRetirosDetraccion = 0;
 
   for (const m of movimientos) {
     const total = Number(m.total);
@@ -32,6 +34,8 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
 
     if (m.tipo === "pago_igv") totalPagosIgv += total;
     if (m.tipo === "prestamo_otorgado") totalPrestamosOtorgados += total;
+    if (m.tipo === "deposito_detraccion") totalDepositosDetraccion += total;
+    if (m.tipo === "retiro_detraccion") totalRetirosDetraccion += total;
   }
 
   const balance = totalIngresos - totalEgresos;
@@ -52,7 +56,12 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
     totalPrestamosRecibidos: 0,
     totalPrestamosOtorgados,
     igvPendiente,
-    cajaNetaDisponible: balance - igvPendiente,
+    // Efectivo real en caja: el IGV pendiente es solo un cálculo, no una reserva
+    cajaNetaDisponible: balance,
+    saldoDetracciones: Math.max(
+      totalDepositosDetraccion - totalRetirosDetraccion,
+      0
+    ),
     cantidadMovimientos: movimientos.length,
   };
 }

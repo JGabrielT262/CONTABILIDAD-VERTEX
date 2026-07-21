@@ -100,7 +100,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
           <h2 className="text-xs font-semibold uppercase tracking-wide text-vertex-muted">
             1. Caja de todos los meses
           </h2>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
             <div className="vertex-caja">
               <p className="text-xs font-semibold uppercase tracking-wide text-white/80">
                 Caja bruta
@@ -125,14 +125,24 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </div>
             <div className="vertex-caja vertex-caja-neta">
               <p className="text-xs font-semibold uppercase tracking-wide text-white/80">
-                Caja neta disponible
+                Caja neta
               </p>
               <p className="text-2xl sm:text-3xl font-bold mt-1 tabular-nums">
                 {formatSoles(cajaGlobal.cajaNetaDisponible)}
               </p>
               <p className="text-xs text-white/80 mt-1.5">
-                Lo que puedes usar ahora · IGV pendiente{" "}
-                {formatSoles(cajaGlobal.igvPendiente)}
+                Efectivo real · entradas − salidas
+              </p>
+            </div>
+            <div className="vertex-caja vertex-caja-detracciones">
+              <p className="text-xs font-semibold uppercase tracking-wide text-white/80">
+                Saldo detracciones
+              </p>
+              <p className="text-2xl sm:text-3xl font-bold mt-1 tabular-nums">
+                {formatSoles(cajaGlobal.saldoDetracciones)}
+              </p>
+              <p className="text-xs text-white/80 mt-1.5">
+                Cuenta SUNAT · de aquí saldrá el IGV
               </p>
             </div>
           </div>
@@ -239,7 +249,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <StatsCard
               title="IGV neto a pagar"
               value={formatSoles(igvNetoMes)}
-              subtitle="IGV ventas − IGV compras"
+              subtitle="Cálculo del mes · no reserva caja"
               icon={Receipt}
               variant="info"
             />
@@ -255,6 +265,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
               value={formatSoles(resumen.totalIgvCompras)}
               subtitle="Crédito fiscal del mes"
               icon={ShoppingCart}
+            />
+            <StatsCard
+              title="IGV pendiente (global)"
+              value={formatSoles(cajaGlobal.igvPendiente)}
+              subtitle="Solo referencia · ventas − compras − pagos"
+              icon={Receipt}
+              variant="info"
             />
           </div>
         </section>

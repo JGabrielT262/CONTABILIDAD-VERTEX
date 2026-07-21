@@ -7,7 +7,7 @@
 CREATE TABLE IF NOT EXISTS movimientos (
   id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   source_key TEXT,
-  tipo TEXT NOT NULL CHECK (tipo IN ('venta', 'compra', 'retiro', 'pago_igv', 'pago_contador', 'ingreso', 'salida', 'prestamo_recibido', 'prestamo_otorgado', 'cobro_prestamo')),
+  tipo TEXT NOT NULL CHECK (tipo IN ('venta', 'compra', 'retiro', 'pago_igv', 'pago_contador', 'ingreso', 'salida', 'prestamo_recibido', 'prestamo_otorgado', 'cobro_prestamo', 'deposito_detraccion', 'retiro_detraccion')),
   concepto TEXT NOT NULL,
   descripcion TEXT,
   comprobante_tipo TEXT,

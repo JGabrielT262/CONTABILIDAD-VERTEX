@@ -74,6 +74,10 @@ export default function MovementForm({
       else if (tipo === "retiro") setConcepto("Retiro de caja");
       else if (tipo === "venta") setConcepto("Venta");
       else if (tipo === "compra") setConcepto("Compra");
+      else if (tipo === "deposito_detraccion")
+        setConcepto("Depósito a detracciones");
+      else if (tipo === "retiro_detraccion")
+        setConcepto("Retiro desde detracciones");
     }
   }, [tipo, isEdit]);
 
