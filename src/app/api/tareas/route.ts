@@ -12,6 +12,12 @@ function lastDayIso(year: number, month: number): string {
   return `${year}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 }
 
+function dayOfMonthIso(year: number, month: number, day: number): string {
+  const last = new Date(year, month, 0).getDate();
+  const d = Math.min(Math.max(1, day), last);
+  return `${year}-${String(month).padStart(2, "0")}-${String(d).padStart(2, "0")}`;
+}
+
 export async function GET(request: NextRequest) {
   try {
     const supabase = createSupabaseClient();
@@ -57,11 +63,13 @@ export async function POST(request: NextRequest) {
     const monto_usd = body.monto_usd != null ? parseFloat(body.monto_usd) : null;
     const ruc = String(body.ruc || "").replace(/\D/g, "") || null;
     const razon_social = String(body.razon_social || "").trim() || null;
-    const modo = String(body.modo || "unica"); // unica | fin_mes
+    const modo = String(body.modo || "unica"); // unica | fin_mes | dia_mes
     const year = parseInt(String(body.year || ""));
     const monthStart = parseInt(String(body.month_start || body.month || ""));
     const monthsCount = Math.max(1, parseInt(String(body.months_count || "1")));
+    const diaMes = Math.max(1, Math.min(31, parseInt(String(body.dia_mes || "13")) || 13));
     const fechaUnica = String(body.fecha || "");
+    const sourcePrefix = String(body.source_prefix || "").trim() || null;
 
     if (!titulo) {
       return NextResponse.json({ error: "El título es obligatorio" }, { status: 400 });
@@ -69,7 +77,7 @@ export async function POST(request: NextRequest) {
 
     const rows: Record<string, unknown>[] = [];
 
-    if (modo === "fin_mes") {
+    if (modo === "fin_mes" || modo === "dia_mes") {
       if (!year || !monthStart || monthStart < 1 || monthStart > 12) {
         return NextResponse.json(
           { error: "Indica año y mes de inicio válidos" },
@@ -84,7 +92,13 @@ export async function POST(request: NextRequest) {
           m -= 12;
           y += 1;
         }
-        const fecha = lastDayIso(y, m);
+        const fecha =
+          modo === "dia_mes"
+            ? dayOfMonthIso(y, m, diaMes)
+            : lastDayIso(y, m);
+        const source_key = sourcePrefix
+          ? `${sourcePrefix}-${y}-${String(m).padStart(2, "0")}`
+          : null;
         rows.push({
           titulo,
           descripcion,
@@ -94,6 +108,7 @@ export async function POST(request: NextRequest) {
           ruc,
           razon_social,
           estado: "pendiente",
+          ...(source_key ? { source_key } : {}),
         });
       }
     } else {
@@ -110,6 +125,32 @@ export async function POST(request: NextRequest) {
         razon_social,
         estado: "pendiente",
       });
+    }
+
+    // Evita duplicar series con source_key (upsert parcial: ignora conflictos)
+    if (sourcePrefix) {
+      const { data: existing } = await supabase
+        .from(TAREAS_TABLE)
+        .select("source_key")
+        .like("source_key", `${sourcePrefix}-%`);
+      const existingKeys = new Set((existing || []).map((e) => e.source_key));
+      const filtered = rows.filter(
+        (r) => !r.source_key || !existingKeys.has(String(r.source_key))
+      );
+      if (filtered.length === 0) {
+        return NextResponse.json(
+          { message: "Las tareas de esta serie ya existen", data: [] },
+          { status: 200 }
+        );
+      }
+      const { data, error } = await supabase
+        .from(TAREAS_TABLE)
+        .insert(filtered)
+        .select();
+      if (error) {
+        return NextResponse.json({ error: error.message }, { status: 500 });
+      }
+      return NextResponse.json(data, { status: 201 });
     }
 
     const { data, error } = await supabase

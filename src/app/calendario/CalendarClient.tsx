@@ -372,7 +372,7 @@ function NuevaTareaModal({
   onClose: () => void;
   onSuccess: () => void;
 }) {
-  const [modo, setModo] = useState<"unica" | "fin_mes">("fin_mes");
+  const [modo, setModo] = useState<"unica" | "fin_mes" | "dia_mes">("fin_mes");
   const [titulo, setTitulo] = useState("Crear factura USD 750 + IGV");
   const [descripcion, setDescripcion] = useState(
     "Factura sujeta al tipo de cambio del día. Monto: USD 750.00 + IGV."
@@ -382,6 +382,7 @@ function NuevaTareaModal({
   const [monthStart, setMonthStart] = useState(month);
   const [yearStart, setYearStart] = useState(year);
   const [monthsCount, setMonthsCount] = useState(4);
+  const [diaMes, setDiaMes] = useState(13);
   const [montoUsd, setMontoUsd] = useState("750");
   const [ruc, setRuc] = useState("20611393238");
   const [razonSocial, setRazonSocial] = useState(
@@ -420,6 +421,7 @@ function NuevaTareaModal({
           year: yearStart,
           month_start: monthStart,
           months_count: monthsCount,
+          dia_mes: diaMes,
           monto_usd: montoUsd || null,
           ruc,
           razon_social: razonSocial,
@@ -451,7 +453,7 @@ function NuevaTareaModal({
           <div>
             <h2 className="text-base font-bold">Nueva tarea</h2>
             <p className="text-[11px] text-vertex-muted">
-              Una sola fecha o varios fines de mes
+              Una fecha, fines de mes o un día fijo cada mes
             </p>
           </div>
           <button
@@ -464,7 +466,22 @@ function NuevaTareaModal({
         </div>
 
         <form onSubmit={handleSubmit} className="p-4 space-y-3">
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-3 gap-2">
+            <button
+              type="button"
+              onClick={() => setModo("dia_mes")}
+              className={`p-3 border text-left text-sm ${
+                modo === "dia_mes"
+                  ? "border-vertex-blue bg-blue-50"
+                  : "border-vertex-border"
+              }`}
+              style={{ borderRadius: 4 }}
+            >
+              <p className="font-semibold">Día fijo</p>
+              <p className="text-[11px] text-vertex-muted mt-0.5">
+                Ej. el 13 de cada mes
+              </p>
+            </button>
             <button
               type="button"
               onClick={() => setModo("fin_mes")}
@@ -477,7 +494,7 @@ function NuevaTareaModal({
             >
               <p className="font-semibold">Fines de mes</p>
               <p className="text-[11px] text-vertex-muted mt-0.5">
-                Varios meses seguidos
+                Varios meses
               </p>
             </button>
             <button
@@ -550,7 +567,23 @@ function NuevaTareaModal({
               <DateInput value={fecha} onChange={setFecha} required />
             </div>
           ) : (
-            <div className="grid grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+              {modo === "dia_mes" && (
+                <div>
+                  <label className="vertex-label">Día</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={31}
+                    className="vertex-input"
+                    value={diaMes}
+                    onChange={(e) =>
+                      setDiaMes(Math.max(1, Math.min(31, parseInt(e.target.value) || 13)))
+                    }
+                    required
+                  />
+                </div>
+              )}
               <div>
                 <label className="vertex-label">Mes inicio</label>
                 <select
