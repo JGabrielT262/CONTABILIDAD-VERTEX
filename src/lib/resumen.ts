@@ -39,7 +39,6 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
   }
 
   const balance = totalIngresos - totalEgresos;
-  // Solo referencia tributaria; no afecta la caja
   const igvPendiente = Math.max(
     totalIgvVentas - totalIgvCompras - totalPagosIgv,
     0
@@ -57,8 +56,8 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
     totalPrestamosRecibidos: 0,
     totalPrestamosOtorgados,
     igvPendiente,
-    // Caja neta = todo lo entrado − todo lo salido (el IGV pagado ya va en salidas)
-    cajaNetaDisponible: balance,
+    // Saldo real: efectivo (entradas − salidas) menos el IGV que aún debes
+    cajaNetaDisponible: balance - igvPendiente,
     saldoDetracciones: Math.max(
       totalDepositosDetraccion - totalRetirosDetraccion,
       0

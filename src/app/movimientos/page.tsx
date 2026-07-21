@@ -40,6 +40,12 @@ export default async function MovimientosPage({ searchParams }: MovimientosPageP
   const { data: movimientos } = await query;
   const resumen = calcularResumen(movimientos || []);
 
+  // Saldo real global (todos los meses), para que coincida con el Resumen
+  const { data: todos } = await supabase
+    .from(MOVIMIENTOS_TABLE)
+    .select("tipo,total,igv");
+  const cajaGlobal = calcularResumen(todos || []);
+
   return (
     <div className="min-h-dvh pb-16 md:pb-0">
       <Navbar initialUser={user} />
@@ -49,6 +55,8 @@ export default async function MovimientosPage({ searchParams }: MovimientosPageP
           month={month}
           tipo={tipo}
           balance={resumen.balance}
+          cajaNeta={cajaGlobal.cajaNetaDisponible}
+          igvPendiente={cajaGlobal.igvPendiente}
           movimientos={(movimientos || []) as Movimiento[]}
           openNuevo={params.nuevo === "1"}
           canCreate={user?.puede_crear ?? false}

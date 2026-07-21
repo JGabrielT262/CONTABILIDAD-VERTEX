@@ -23,22 +23,25 @@ export default async function CalendarioPage({ searchParams }: CalendarioPagePro
   const user = await getSessionUser();
 
   const supabase = createSupabaseClient();
-  const [{ data: movimientos }, { data: tareas }] = await Promise.all([
-    supabase
-      .from(MOVIMIENTOS_TABLE)
-      .select("id,fecha,tipo,concepto,total,igv")
-      .gte("fecha", desde)
-      .lte("fecha", hasta)
-      .order("fecha", { ascending: true }),
-    supabase
-      .from(TAREAS_TABLE)
-      .select("*")
-      .gte("fecha", desde)
-      .lte("fecha", hasta)
-      .order("fecha", { ascending: true }),
-  ]);
+  const [{ data: movimientos }, { data: tareas }, { data: todos }] =
+    await Promise.all([
+      supabase
+        .from(MOVIMIENTOS_TABLE)
+        .select("id,fecha,tipo,concepto,total,igv")
+        .gte("fecha", desde)
+        .lte("fecha", hasta)
+        .order("fecha", { ascending: true }),
+      supabase
+        .from(TAREAS_TABLE)
+        .select("*")
+        .gte("fecha", desde)
+        .lte("fecha", hasta)
+        .order("fecha", { ascending: true }),
+      supabase.from(MOVIMIENTOS_TABLE).select("tipo,total,igv"),
+    ]);
 
-  const resumen = calcularResumen(movimientos || []);
+  const resumenMes = calcularResumen(movimientos || []);
+  const cajaGlobal = calcularResumen(todos || []);
 
   return (
     <div className="min-h-dvh pb-16 md:pb-0">
@@ -48,13 +51,23 @@ export default async function CalendarioPage({ searchParams }: CalendarioPagePro
           <div>
             <h1 className="text-xl font-bold tracking-tight">Calendario</h1>
             <p className="text-vertex-muted text-xs mt-0.5">
-              Movimientos y tareas futuras ·{" "}
+              Caja neta real{" "}
+              <span
+                className={
+                  cajaGlobal.cajaNetaDisponible >= 0
+                    ? "text-vertex-success"
+                    : "text-vertex-danger"
+                }
+              >
+                {formatSoles(cajaGlobal.cajaNetaDisponible)}
+              </span>
+              {" · mes "}
               <span className="text-vertex-success">
-                +{formatSoles(resumen.totalIngresos)}
+                +{formatSoles(resumenMes.totalIngresos)}
               </span>
               {" / "}
               <span className="text-vertex-danger">
-                -{formatSoles(resumen.totalEgresos)}
+                -{formatSoles(resumenMes.totalEgresos)}
               </span>
             </p>
           </div>
