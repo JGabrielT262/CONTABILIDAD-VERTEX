@@ -15,7 +15,6 @@ interface MovimientosViewProps {
   tipo: string;
   balance: number;
   cajaNeta: number;
-  igvPendiente: number;
   movimientos: Movimiento[];
   openNuevo?: boolean;
   canCreate?: boolean;
@@ -28,7 +27,6 @@ export default function MovimientosView({
   tipo,
   balance,
   cajaNeta,
-  igvPendiente,
   movimientos,
   openNuevo = false,
   canCreate = true,
@@ -50,7 +48,7 @@ export default function MovimientosView({
         <div>
           <h1 className="text-xl font-bold tracking-tight">Movimientos</h1>
           <p className="text-vertex-muted text-xs mt-0.5">
-            Caja neta real:{" "}
+            Caja neta:{" "}
             <span
               className={
                 cajaNeta >= 0 ? "text-vertex-success" : "text-vertex-danger"
@@ -60,8 +58,7 @@ export default function MovimientosView({
             </span>
             <span className="text-vertex-muted">
               {" "}
-              · IGV pendiente {formatSoles(igvPendiente)} · mes{" "}
-              {formatSoles(balance)}
+              · entradas − salidas · mes {formatSoles(balance)}
             </span>
           </p>
         </div>

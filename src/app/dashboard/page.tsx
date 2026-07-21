@@ -125,14 +125,13 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             </div>
             <div className="vertex-caja vertex-caja-neta">
               <p className="text-xs font-semibold uppercase tracking-wide text-white/80">
-                Caja neta real
+                Caja neta
               </p>
               <p className="text-2xl sm:text-3xl font-bold mt-1 tabular-nums">
                 {formatSoles(cajaGlobal.cajaNetaDisponible)}
               </p>
               <p className="text-xs text-white/80 mt-1.5">
-                Entradas − salidas − IGV pendiente{" "}
-                {formatSoles(cajaGlobal.igvPendiente)}
+                Entradas − salidas
               </p>
             </div>
             <div className="vertex-caja vertex-caja-detracciones">
@@ -270,7 +269,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
             <StatsCard
               title="IGV pendiente (global)"
               value={formatSoles(cajaGlobal.igvPendiente)}
-              subtitle="Ya restado de la caja neta real"
+              subtitle="Solo cálculo · no resta la caja"
               icon={Receipt}
               variant="info"
             />

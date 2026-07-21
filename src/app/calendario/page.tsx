@@ -51,7 +51,7 @@ export default async function CalendarioPage({ searchParams }: CalendarioPagePro
           <div>
             <h1 className="text-xl font-bold tracking-tight">Calendario</h1>
             <p className="text-vertex-muted text-xs mt-0.5">
-              Caja neta real{" "}
+              Caja neta{" "}
               <span
                 className={
                   cajaGlobal.cajaNetaDisponible >= 0

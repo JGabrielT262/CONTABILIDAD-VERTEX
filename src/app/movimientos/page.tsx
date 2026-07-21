@@ -56,7 +56,6 @@ export default async function MovimientosPage({ searchParams }: MovimientosPageP
           tipo={tipo}
           balance={resumen.balance}
           cajaNeta={cajaGlobal.cajaNetaDisponible}
-          igvPendiente={cajaGlobal.igvPendiente}
           movimientos={(movimientos || []) as Movimiento[]}
           openNuevo={params.nuevo === "1"}
           canCreate={user?.puede_crear ?? false}

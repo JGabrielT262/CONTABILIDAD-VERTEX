@@ -56,8 +56,8 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
     totalPrestamosRecibidos: 0,
     totalPrestamosOtorgados,
     igvPendiente,
-    // Saldo real: efectivo (entradas − salidas) menos el IGV que aún debes
-    cajaNetaDisponible: balance - igvPendiente,
+    // Caja neta = entradas − salidas (el IGV pagado ya está en las salidas)
+    cajaNetaDisponible: balance,
     saldoDetracciones: Math.max(
       totalDepositosDetraccion - totalRetirosDetraccion,
       0
