@@ -131,7 +131,7 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
                 {formatSoles(cajaGlobal.cajaNetaDisponible)}
               </p>
               <p className="text-xs text-white/80 mt-1.5">
-                Efectivo real · entradas − salidas
+                Tu caja · el pago de IGV sí la descuenta
               </p>
             </div>
             <div className="vertex-caja vertex-caja-detracciones">
