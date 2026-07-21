@@ -1,8 +1,7 @@
 import Navbar from "@/components/Navbar";
 import CalendarClient, { type CalendarMovimiento } from "./CalendarClient";
 import { createSupabaseClient, MOVIMIENTOS_TABLE, TAREAS_TABLE } from "@/lib/supabase";
-import { getMonthRange } from "@/lib/resumen";
-import { calcularResumen } from "@/lib/resumen";
+import { getMonthRange, calcularResumen, perteneceAlMes } from "@/lib/resumen";
 import { formatSoles } from "@/lib/igv";
 import { getSessionUser } from "@/lib/auth";
 import type { Tarea } from "@/lib/types";
@@ -27,7 +26,7 @@ export default async function CalendarioPage({ searchParams }: CalendarioPagePro
     await Promise.all([
       supabase
         .from(MOVIMIENTOS_TABLE)
-        .select("id,fecha,tipo,concepto,total,igv,origen_fondo")
+        .select("id,fecha,tipo,concepto,total,igv,origen_fondo,periodo_impuesto")
         .gte("fecha", desde)
         .lte("fecha", hasta)
         .order("fecha", { ascending: true }),
@@ -37,10 +36,15 @@ export default async function CalendarioPage({ searchParams }: CalendarioPagePro
         .gte("fecha", desde)
         .lte("fecha", hasta)
         .order("fecha", { ascending: true }),
-      supabase.from(MOVIMIENTOS_TABLE).select("tipo,total,igv,origen_fondo"),
+      supabase
+        .from(MOVIMIENTOS_TABLE)
+        .select("tipo,total,igv,origen_fondo,fecha,periodo_impuesto"),
     ]);
 
-  const resumenMes = calcularResumen(movimientos || []);
+  // Totales del mes usan periodo contable (pago IGV → mes del impuesto)
+  const resumenMes = calcularResumen(
+    (todos || []).filter((m) => perteneceAlMes(m, desde, hasta))
+  );
   const cajaGlobal = calcularResumen(todos || []);
 
   return (

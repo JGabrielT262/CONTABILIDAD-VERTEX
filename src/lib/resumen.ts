@@ -2,7 +2,41 @@ import { esIngreso, type Movimiento, type ResumenPeriodo } from "./types";
 
 export type MovimientoResumen = Pick<Movimiento, "tipo" | "total" | "igv"> & {
   origen_fondo?: Movimiento["origen_fondo"];
+  fecha?: string;
+  periodo_impuesto?: string | null;
 };
+
+/**
+ * Fecha contable del movimiento.
+ * Pago IGV se imputa al periodo tributario (YYYY-MM), no a la fecha de pago.
+ */
+export function fechaContable(m: {
+  tipo: string;
+  fecha?: string;
+  periodo_impuesto?: string | null;
+}): string {
+  if (
+    m.tipo === "pago_igv" &&
+    m.periodo_impuesto &&
+    /^\d{4}-\d{2}$/.test(m.periodo_impuesto)
+  ) {
+    return `${m.periodo_impuesto}-01`;
+  }
+  return m.fecha || "";
+}
+
+export function perteneceAlMes(
+  m: {
+    tipo: string;
+    fecha?: string;
+    periodo_impuesto?: string | null;
+  },
+  desde: string,
+  hasta: string
+): boolean {
+  const ref = fechaContable(m);
+  return Boolean(ref) && ref >= desde && ref <= hasta;
+}
 
 export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriodo {
   let totalIngresos = 0;

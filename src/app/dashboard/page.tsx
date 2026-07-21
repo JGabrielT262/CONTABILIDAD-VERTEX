@@ -6,6 +6,7 @@ import { createSupabaseClient, MOVIMIENTOS_TABLE } from "@/lib/supabase";
 import {
   calcularResumen,
   getMonthRange,
+  perteneceAlMes,
   type MovimientoResumen,
 } from "@/lib/resumen";
 import { formatSoles } from "@/lib/igv";
@@ -45,14 +46,14 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
   const [{ data }, user] = await Promise.all([
     supabase
       .from(MOVIMIENTOS_TABLE)
-      .select("tipo,total,igv,fecha,origen_fondo")
+      .select("tipo,total,igv,fecha,origen_fondo,periodo_impuesto")
       .order("fecha", { ascending: false }),
     getSessionUser(),
   ]);
   const todos = (data || []) as (MovimientoResumen & { fecha: string })[];
   const { desde, hasta } = getMonthRange(year, month);
-  const movimientos = todos.filter(
-    (movimiento) => movimiento.fecha >= desde && movimiento.fecha <= hasta
+  const movimientos = todos.filter((movimiento) =>
+    perteneceAlMes(movimiento, desde, hasta)
   );
 
   const resumen = calcularResumen(movimientos);
@@ -70,8 +71,8 @@ export default async function DashboardPage({ searchParams }: DashboardPageProps
     }
     if (y < 2026) continue;
     const range = getMonthRange(y, m);
-    const delMes = todos.filter(
-      (mov) => mov.fecha >= range.desde && mov.fecha <= range.hasta
+    const delMes = todos.filter((mov) =>
+      perteneceAlMes(mov, range.desde, range.hasta)
     );
     const r = calcularResumen(delMes);
     chartData.push({
