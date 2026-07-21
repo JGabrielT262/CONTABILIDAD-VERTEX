@@ -68,6 +68,10 @@ export async function POST(request: NextRequest) {
     const ruc = (formData.get("ruc") as string) || null;
     const razon_social = (formData.get("razon_social") as string) || null;
     const archivo = formData.get("documento") as File | null;
+    const tiene_detraccion = (formData.get("tiene_detraccion") as string) || "";
+    const monto_detraccion = parseFloat(
+      (formData.get("monto_detraccion") as string) || "0"
+    );
 
     if (!tipo || !concepto || !monto || !fecha) {
       return NextResponse.json({ error: "Datos incompletos" }, { status: 400 });
@@ -100,6 +104,37 @@ export async function POST(request: NextRequest) {
       aplicaIgv && !esPrestamo
     );
 
+    const esFacturaConDetraccion =
+      comprobante_tipo === "factura" &&
+      (tipo === "venta" || tipo === "compra") &&
+      tiene_detraccion === "si";
+
+    if (esFacturaConDetraccion) {
+      if (!monto_detraccion || monto_detraccion <= 0) {
+        return NextResponse.json(
+          { error: "Ingresa el monto de la detracción" },
+          { status: 400 }
+        );
+      }
+      if (monto_detraccion >= total) {
+        return NextResponse.json(
+          { error: "La detracción debe ser menor al total de la factura" },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (
+      comprobante_tipo === "factura" &&
+      (tipo === "venta" || tipo === "compra") &&
+      !tiene_detraccion
+    ) {
+      return NextResponse.json(
+        { error: "Indica si la factura tiene detracciones" },
+        { status: 400 }
+      );
+    }
+
     const valor_unitario = valorUnitarioRaw
       ? parseFloat(valorUnitarioRaw)
       : cantidad > 0
@@ -129,12 +164,19 @@ export async function POST(request: NextRequest) {
       documento_nombre = archivo.name;
     }
 
+    const descripcionFinal =
+      esFacturaConDetraccion && monto_detraccion > 0
+        ? [descripcion, `Detracción: S/ ${monto_detraccion.toFixed(2)}`]
+            .filter(Boolean)
+            .join(" · ")
+        : descripcion;
+
     const { data, error } = await supabase
       .from(MOVIMIENTOS_TABLE)
       .insert({
         tipo,
         concepto,
-        descripcion,
+        descripcion: descripcionFinal,
         monto,
         incluye_igv: aplicaIgv ? incluye_igv : false,
         subtotal,
@@ -156,6 +198,41 @@ export async function POST(request: NextRequest) {
 
     if (error) {
       return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    // En ventas, la detracción va a tu cuenta SUNAT (sale de caja operativa)
+    if (tipo === "venta" && esFacturaConDetraccion) {
+      const ref = comprobante_numero?.trim() || data.id.slice(0, 8);
+      const { error: detError } = await supabase.from(MOVIMIENTOS_TABLE).insert({
+        tipo: "deposito_detraccion",
+        concepto: `Detracción factura ${ref}`,
+        descripcion: `Detracción de venta ${concepto}`,
+        monto: monto_detraccion,
+        incluye_igv: false,
+        subtotal: monto_detraccion,
+        igv: 0,
+        total: monto_detraccion,
+        fecha,
+        cantidad: 1,
+        valor_unitario: monto_detraccion,
+        comprobante_tipo,
+        comprobante_numero,
+        ruc,
+        razon_social,
+        item: `Detracción factura ${ref}`,
+        documento_url: null,
+        documento_nombre: null,
+      });
+
+      if (detError) {
+        return NextResponse.json(
+          {
+            error: `Venta guardada, pero falló la detracción: ${detError.message}. Ejecuta la migración de detracciones en Supabase.`,
+            movimiento: data,
+          },
+          { status: 500 }
+        );
+      }
     }
 
     return NextResponse.json(data, { status: 201 });

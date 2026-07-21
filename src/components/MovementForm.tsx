@@ -50,14 +50,19 @@ export default function MovementForm({
   const [rucMsg, setRucMsg] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [tieneDetraccion, setTieneDetraccion] = useState<"si" | "no" | "">("");
+  const [montoDetraccion, setMontoDetraccion] = useState("");
 
   const aplicaIgv = tipoAplicaIgv(tipo);
   const esCompra = tipo === "compra";
-  const esVentaFactura =
-    tipo === "venta" && comprobanteTipo === "factura";
+  const esFactura = comprobanteTipo === "factura";
+  const esVentaFactura = tipo === "venta" && esFactura;
   const requiereDatosFiscales = esCompra || esVentaFactura;
+  const preguntaDetraccion =
+    esFactura && (tipo === "venta" || tipo === "compra") && !isEdit;
   const montoNum = parseFloat(monto) || 0;
   const cantidadNum = parseFloat(cantidad) || 0;
+  const montoDetraccionNum = parseFloat(montoDetraccion) || 0;
   const preview =
     montoNum > 0
       ? calcularIgv(montoNum, aplicaIgv ? incluyeIgv : false, aplicaIgv)
@@ -122,6 +127,18 @@ export default function MovementForm({
       if (!cantidadNum || cantidadNum <= 0) {
         throw new Error("La cantidad debe ser mayor a 0");
       }
+      if (preguntaDetraccion && !tieneDetraccion) {
+        throw new Error("Indica si la factura tiene detracciones");
+      }
+      if (preguntaDetraccion && tieneDetraccion === "si") {
+        if (!montoDetraccionNum || montoDetraccionNum <= 0) {
+          throw new Error("Ingresa el monto de la detracción");
+        }
+        const totalOp = preview?.total ?? montoNum;
+        if (montoDetraccionNum >= totalOp) {
+          throw new Error("La detracción debe ser menor al total de la factura");
+        }
+      }
 
       const formData = new FormData();
       formData.append("tipo", tipo);
@@ -139,6 +156,12 @@ export default function MovementForm({
       if (requiereDatosFiscales) {
         formData.append("ruc", ruc.replace(/\D/g, ""));
         formData.append("razon_social", razonSocial.trim());
+      }
+      if (preguntaDetraccion) {
+        formData.append("tiene_detraccion", tieneDetraccion);
+        if (tieneDetraccion === "si") {
+          formData.append("monto_detraccion", String(montoDetraccionNum));
+        }
       }
       if (archivo) formData.append("documento", archivo);
 
@@ -292,7 +315,14 @@ export default function MovementForm({
           <label className="vertex-label">Tipo de documento</label>
           <select
             value={comprobanteTipo}
-            onChange={(e) => setComprobanteTipo(e.target.value)}
+            onChange={(e) => {
+              const value = e.target.value;
+              setComprobanteTipo(value);
+              if (value !== "factura") {
+                setTieneDetraccion("");
+                setMontoDetraccion("");
+              }
+            }}
             className="vertex-input"
           >
             <option value="boleta">Boleta</option>
@@ -312,6 +342,70 @@ export default function MovementForm({
           />
         </div>
       </div>
+
+      {preguntaDetraccion && (
+        <div className="rounded-xl border border-amber-200 bg-amber-50 p-4 space-y-3">
+          <div>
+            <label className="vertex-label">¿Tiene detracciones?</label>
+            <div className="flex flex-wrap gap-2 mt-1">
+              <button
+                type="button"
+                onClick={() => setTieneDetraccion("si")}
+                className={`vertex-btn ${
+                  tieneDetraccion === "si"
+                    ? "vertex-btn-primary"
+                    : "vertex-btn-secondary"
+                }`}
+              >
+                Sí
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  setTieneDetraccion("no");
+                  setMontoDetraccion("");
+                }}
+                className={`vertex-btn ${
+                  tieneDetraccion === "no"
+                    ? "vertex-btn-primary"
+                    : "vertex-btn-secondary"
+                }`}
+              >
+                No
+              </button>
+            </div>
+          </div>
+
+          {tieneDetraccion === "si" && (
+            <div className="space-y-2">
+              <div>
+                <label className="vertex-label">Monto de detracción (S/)</label>
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={montoDetraccion}
+                  onChange={(e) => setMontoDetraccion(e.target.value)}
+                  className="vertex-input"
+                  placeholder="Ej: 378.00"
+                  required
+                />
+              </div>
+              {tipo === "venta" && montoDetraccionNum > 0 && preview && (
+                <p className="text-xs text-amber-800">
+                  Entra a caja {formatSoles(preview.total - montoDetraccionNum)} ·
+                  a detracciones {formatSoles(montoDetraccionNum)}
+                </p>
+              )}
+              {tipo === "compra" && (
+                <p className="text-xs text-amber-800">
+                  Quedará anotada en la descripción de la compra.
+                </p>
+              )}
+            </div>
+          )}
+        </div>
+      )}
 
       {requiereDatosFiscales && (
         <div className="rounded-xl border border-vertex-border bg-vertex-surface p-4 space-y-3">
