@@ -39,14 +39,11 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
   }
 
   const balance = totalIngresos - totalEgresos;
-  // Referencia tributaria: sí descuenta lo ya pagado
+  // Solo referencia tributaria; no afecta la caja
   const igvPendiente = Math.max(
     totalIgvVentas - totalIgvCompras - totalPagosIgv,
     0
   );
-  // IGV de ventas/compras (sin restar pagos): al pagar IGV la caja baja
-  // el monto completo. Ej: 883.88 − 170 = 713.88
-  const igvDeOperacion = Math.max(totalIgvVentas - totalIgvCompras, 0);
 
   return {
     totalIngresos,
@@ -60,7 +57,8 @@ export function calcularResumen(movimientos: MovimientoResumen[]): ResumenPeriod
     totalPrestamosRecibidos: 0,
     totalPrestamosOtorgados,
     igvPendiente,
-    cajaNetaDisponible: balance - igvDeOperacion,
+    // Caja neta = todo lo entrado − todo lo salido (el IGV pagado ya va en salidas)
+    cajaNetaDisponible: balance,
     saldoDetracciones: Math.max(
       totalDepositosDetraccion - totalRetirosDetraccion,
       0
